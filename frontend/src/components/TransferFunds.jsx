@@ -135,7 +135,7 @@ const TransferFunds = () => {
         <button 
           type="submit" 
           disabled={loading || !formData.fromAccountId}
-          className="w-full bg-brand-primary hover:bg-blue-600 text-white font-bold py-4 rounded transition-colors text-lg disabled:opacity-50"
+          className="w-full bg-brand-primary hover:bg-brand-hover text-white font-bold py-4 rounded transition-colors text-lg disabled:opacity-50"
         >
           {loading ? 'Processing Transfer...' : 'Execute Transfer'}
         </button>

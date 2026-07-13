@@ -26,10 +26,18 @@ const requireAuth = async (req, res, next) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.customerId = decoded.customerId;
+        req.isAdmin = decoded.isAdmin;
         next();
     } catch (err) {
         return res.status(401).json({ error: 'Unauthorized: Invalid token' });
     }
+};
+
+const requireAdmin = (req, res, next) => {
+    if (!req.isAdmin) {
+        return res.status(403).json({ error: 'Forbidden: Admin access required' });
+    }
+    next();
 };
 
 // ------------------------------------------------------------------
@@ -78,7 +86,7 @@ app.post('/api/auth/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, customer.password_hash);
         if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
-        const token = jwt.sign({ customerId: customer.customer_id, email: customer.email }, JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign({ customerId: customer.customer_id, email: customer.email, isAdmin: customer.is_admin }, JWT_SECRET, { expiresIn: '1d' });
         
         res.json({
             token,
@@ -86,7 +94,8 @@ app.post('/api/auth/login', async (req, res) => {
                 customerId: customer.customer_id,
                 firstName: customer.first_name,
                 lastName: customer.last_name,
-                email: customer.email
+                email: customer.email,
+                isAdmin: customer.is_admin
             }
         });
     } catch (error) {
@@ -103,7 +112,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/me', requireAuth, async (req, res) => {
     try {
         const { rows: userRows } = await pool.query(
-            'SELECT customer_id, first_name, last_name, email, phone FROM customers WHERE customer_id = $1',
+            'SELECT customer_id, first_name, last_name, email, phone, is_admin FROM customers WHERE customer_id = $1',
             [req.customerId]
         );
         
@@ -321,6 +330,175 @@ app.get('/api/accounts/:id/statement', requireAuth, async (req, res) => {
         res.json(rows);
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// ------------------------------------------------------------------
+// BENEFICIARIES ROUTES
+// ------------------------------------------------------------------
+
+app.get('/api/beneficiaries', requireAuth, async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            'SELECT b.*, a.account_type, a.status FROM beneficiaries b JOIN accounts a ON b.beneficiary_account_id = a.account_id WHERE b.customer_id = $1 ORDER BY b.created_at DESC',
+            [req.customerId]
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch beneficiaries' });
+    }
+});
+
+app.post('/api/beneficiaries', requireAuth, async (req, res) => {
+    const { beneficiaryAccountId, nickname } = req.body;
+    if (!beneficiaryAccountId || !nickname) return res.status(400).json({ error: 'Missing details' });
+
+    try {
+        // Verify beneficiary account exists and is not owned by the current user
+        const { rows: accountCheck } = await pool.query('SELECT customer_id FROM accounts WHERE account_id = $1', [beneficiaryAccountId]);
+        if (accountCheck.length === 0) return res.status(404).json({ error: 'Beneficiary account not found' });
+        if (accountCheck[0].customer_id === req.customerId) return res.status(400).json({ error: 'Cannot add your own account as a beneficiary' });
+
+        const { rows } = await pool.query(
+            'INSERT INTO beneficiaries (customer_id, beneficiary_account_id, nickname) VALUES ($1, $2, $3) RETURNING *',
+            [req.customerId, beneficiaryAccountId, nickname]
+        );
+        res.status(201).json({ success: true, beneficiary: rows[0], message: 'Beneficiary added successfully' });
+    } catch (error) {
+        if (error.code === '23505') {
+            return res.status(400).json({ error: 'Beneficiary already added' });
+        }
+        res.status(500).json({ error: 'Failed to add beneficiary' });
+    }
+});
+
+app.delete('/api/beneficiaries/:id', requireAuth, async (req, res) => {
+    try {
+        const { rowCount } = await pool.query('DELETE FROM beneficiaries WHERE beneficiary_id = $1 AND customer_id = $2', [req.params.id, req.customerId]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Beneficiary not found or unauthorized' });
+        res.json({ success: true, message: 'Beneficiary removed successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove beneficiary' });
+    }
+});
+
+// ------------------------------------------------------------------
+// LOANS ROUTES
+// ------------------------------------------------------------------
+
+app.get('/api/loans', requireAuth, async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM loans WHERE customer_id = $1 ORDER BY created_at DESC', [req.customerId]);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch loans' });
+    }
+});
+
+app.post('/api/loans', requireAuth, async (req, res) => {
+    const { loanType, amount, interestRate } = req.body;
+    if (!loanType || !amount || !interestRate || amount <= 0) {
+        return res.status(400).json({ error: 'Invalid loan details' });
+    }
+
+    try {
+        const { rows } = await pool.query(
+            'INSERT INTO loans (customer_id, loan_type, amount, interest_rate, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [req.customerId, loanType, amount, interestRate, 'Pending']
+        );
+        res.status(201).json({ success: true, loan: rows[0], message: 'Loan application submitted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to apply for loan' });
+    }
+});
+
+// ------------------------------------------------------------------
+// ADMIN ROUTES
+// ------------------------------------------------------------------
+
+app.get('/api/admin/stats', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { rows: userCount } = await pool.query('SELECT COUNT(*) FROM customers WHERE is_admin = FALSE');
+        const { rows: balanceSum } = await pool.query('SELECT SUM(balance) FROM accounts');
+        const { rows: loanCount } = await pool.query("SELECT COUNT(*) FROM loans WHERE status = 'Pending'");
+        const { rows: totalTransactions } = await pool.query('SELECT COUNT(*) FROM transactions');
+        
+        res.json({
+            totalUsers: parseInt(userCount[0].count),
+            totalBalances: parseFloat(balanceSum[0].sum || 0),
+            pendingLoans: parseInt(loanCount[0].count),
+            totalTransactions: parseInt(totalTransactions[0].count)
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+app.get('/api/admin/loans', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT l.*, c.first_name, c.last_name, c.email 
+            FROM loans l
+            JOIN customers c ON l.customer_id = c.customer_id
+            WHERE l.status = 'Pending'
+            ORDER BY l.created_at DESC
+        `);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch pending loans' });
+    }
+});
+
+app.put('/api/admin/loans/:id/approve', requireAuth, requireAdmin, async (req, res) => {
+    const loanId = req.params.id;
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        // Lock the loan row
+        const { rows: loanRows } = await client.query("SELECT * FROM loans WHERE loan_id = $1 AND status = 'Pending' FOR UPDATE", [loanId]);
+        if (loanRows.length === 0) throw new Error('Loan not found or already processed');
+        const loan = loanRows[0];
+        
+        // Find user's checking account (or any active account) to deposit loan amount
+        const { rows: accRows } = await client.query(
+            "SELECT account_id FROM accounts WHERE customer_id = $1 AND account_type = 'Checking' AND status = 'Active' LIMIT 1 FOR UPDATE", 
+            [loan.customer_id]
+        );
+        
+        if (accRows.length === 0) throw new Error('Customer does not have an active Checking account to receive funds');
+        const accountId = accRows[0].account_id;
+        
+        // Update loan status
+        await client.query("UPDATE loans SET status = 'Active' WHERE loan_id = $1", [loanId]);
+        
+        // Deposit funds
+        await client.query("UPDATE accounts SET balance = balance + $1 WHERE account_id = $2", [loan.amount, accountId]);
+        
+        // Log transaction
+        await client.query(
+            "INSERT INTO transactions (to_account_id, transaction_type, amount, status, description) VALUES ($1, 'Deposit', $2, 'Completed', $3)",
+            [accountId, loan.amount, `Loan Disbursement (ID: ${loanId})`]
+        );
+        
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'Loan approved and funds disbursed' });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        res.status(400).json({ error: error.message || 'Failed to approve loan' });
+    } finally {
+        client.release();
+    }
+});
+
+app.put('/api/admin/loans/:id/reject', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { rowCount } = await pool.query("UPDATE loans SET status = 'Closed' WHERE loan_id = $1 AND status = 'Pending'", [req.params.id]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Loan not found or already processed' });
+        res.json({ success: true, message: 'Loan rejected' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to reject loan' });
     }
 });
 

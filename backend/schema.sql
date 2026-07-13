@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS customers (
     email VARCHAR(255) NOT NULL UNIQUE,
     phone VARCHAR(20) UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -48,4 +49,34 @@ CREATE TABLE IF NOT EXISTS transactions (
         ON DELETE RESTRICT,
     CONSTRAINT chk_amount_positive CHECK (amount > 0),
     CONSTRAINT chk_different_accounts CHECK (from_account_id IS DISTINCT FROM to_account_id)
+);
+
+-- 4. Beneficiaries Table
+CREATE TABLE IF NOT EXISTS beneficiaries (
+    beneficiary_id SERIAL PRIMARY KEY,
+    customer_id INT NOT NULL,
+    beneficiary_account_id INT NOT NULL,
+    nickname VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_beneficiary_customer FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_beneficiary_account FOREIGN KEY (beneficiary_account_id)
+        REFERENCES accounts(account_id)
+        ON DELETE CASCADE,
+    CONSTRAINT chk_different_customer CHECK (customer_id IS DISTINCT FROM beneficiary_account_id)
+);
+
+-- 5. Loans Table
+CREATE TABLE IF NOT EXISTS loans (
+    loan_id SERIAL PRIMARY KEY,
+    customer_id INT NOT NULL,
+    loan_type VARCHAR(50) NOT NULL CHECK (loan_type IN ('Personal', 'Home', 'Auto', 'Education')),
+    amount DECIMAL(15, 2) NOT NULL CHECK (amount > 0),
+    interest_rate DECIMAL(5, 2) NOT NULL CHECK (interest_rate >= 0),
+    status VARCHAR(20) NOT NULL DEFAULT 'Active' CHECK (status IN ('Pending', 'Active', 'Closed', 'Defaulted')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_loan_customer FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE CASCADE
 );

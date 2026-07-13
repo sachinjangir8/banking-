@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 const TransferFunds = () => {
   const { user } = useContext(AuthContext);
   const [accounts, setAccounts] = useState([]);
+  const [beneficiaries, setBeneficiaries] = useState([]);
   const [formData, setFormData] = useState({
     fromAccountId: '',
     toAccountId: '',
@@ -25,8 +26,13 @@ const TransferFunds = () => {
         if (res.data.accounts.length > 0) {
           setFormData(prev => ({ ...prev, fromAccountId: res.data.accounts[0].account_id.toString() }));
         }
+
+        const benRes = await axios.get(`${apiUrl}/beneficiaries`, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        });
+        setBeneficiaries(benRes.data);
       } catch (err) {
-        console.error('Failed to load accounts');
+        console.error('Failed to load accounts or beneficiaries');
       }
     };
     if (user) fetchAccounts();
@@ -107,16 +113,34 @@ const TransferFunds = () => {
         </div>
         
         <div>
-          <label className="block text-sm text-gray-400 mb-2">To Account ID (Destination)</label>
-          <input 
-            type="number" 
-            name="toAccountId" 
-            value={formData.toAccountId} 
-            onChange={handleChange}
-            className="w-full bg-brand-dark border border-gray-600 rounded px-4 py-3 text-white"
-            placeholder="e.g. 2"
-            required
-          />
+          <label className="block text-sm text-gray-400 mb-2">To Account (Beneficiary)</label>
+          <div className="flex gap-4">
+            <select
+              className="flex-1 bg-brand-dark border border-gray-600 rounded px-4 py-3 text-white appearance-none"
+              onChange={(e) => {
+                if (e.target.value) {
+                  setFormData({ ...formData, toAccountId: e.target.value });
+                }
+              }}
+            >
+              <option value="">-- Select Beneficiary --</option>
+              {beneficiaries.map(ben => (
+                <option key={ben.beneficiary_id} value={ben.beneficiary_account_id}>
+                  {ben.nickname} (Acct #{ben.beneficiary_account_id})
+                </option>
+              ))}
+            </select>
+            <div className="flex items-center text-gray-400 font-bold">OR</div>
+            <input 
+              type="number" 
+              name="toAccountId" 
+              value={formData.toAccountId} 
+              onChange={handleChange}
+              className="flex-1 bg-brand-dark border border-gray-600 rounded px-4 py-3 text-white"
+              placeholder="Enter Account ID"
+              required
+            />
+          </div>
         </div>
         
         <div>

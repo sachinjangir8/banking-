@@ -22,6 +22,11 @@ const Layout = () => {
             <Link to="/" className={isActive('/')}>Dashboard</Link>
             <Link to="/transfer" className={isActive('/transfer')}>Transfer Funds</Link>
             <Link to="/manage-funds" className={isActive('/manage-funds')}>Manage Funds</Link>
+            <Link to="/beneficiaries" className={isActive('/beneficiaries')}>Beneficiaries</Link>
+            <Link to="/loans" className={isActive('/loans')}>Loans</Link>
+            {user?.isAdmin && (
+              <Link to="/admin" className={isActive('/admin')}>Admin Panel</Link>
+            )}
           </div>
         </div>
 

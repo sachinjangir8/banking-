@@ -3,10 +3,10 @@ TRUNCATE TABLE transactions, accounts, customers RESTART IDENTITY CASCADE;
 
 -- 1. Insert Mock Customers
 -- Password for mock users: '1234567' for first, 'password123' for rest
-INSERT INTO customers (first_name, last_name, email, phone, password_hash) VALUES
-('sachin', 'jinn', 'sachinjangir1319@gmail.com', '555-0101', '$2b$10$orvsJN3T6auHbTYlGQeZteyfLWoj4r6sAyzkwqARlUv0C2mKslVOy'),
-('jangir', 'Smith', 'jangir@gmail.com', '555-0102', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa'),
-('kamal', 'barbar', 'kamal@gmail.com', '555-0103', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa');
+INSERT INTO customers (first_name, last_name, email, phone, password_hash, is_admin) VALUES
+('sachin', 'jinn', 'sachinjangir1319@gmail.com', '555-0101', '$2b$10$orvsJN3T6auHbTYlGQeZteyfLWoj4r6sAyzkwqARlUv0C2mKslVOy', TRUE),
+('jangir', 'Smith', 'jangir@gmail.com', '555-0102', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa', FALSE),
+('kamal', 'barbar', 'kamal@gmail.com', '555-0103', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa', FALSE);
 
 -- 2. Insert Mock Accounts
 -- Customer 1 gets a checking and savings

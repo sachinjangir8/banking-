@@ -33,7 +33,8 @@ export const AuthProvider = ({ children }) => {
             const response = await axios.get(`${apiUrl}/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser({ token, ...response.data.profile });
+            const profile = response.data.profile;
+            setUser({ token, ...profile, isAdmin: profile.is_admin });
         } catch (error) {
             logout();
         } finally {

@@ -9,11 +9,22 @@ import Statements from './components/Statements';
 import Login from './components/Login';
 import Register from './components/Register';
 import ManageFunds from './components/ManageFunds';
+import Beneficiaries from './components/Beneficiaries';
+import Loans from './components/Loans';
+import AdminDashboard from './components/AdminDashboard';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div className="text-center p-10 text-white">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div className="text-center p-10 text-white">Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.isAdmin) return <Navigate to="/" replace />;
   return children;
 };
 
@@ -37,6 +48,9 @@ function App() {
             <Route path="account/:id/statements" element={<Statements />} />
             <Route path="transfer" element={<TransferFunds />} />
             <Route path="manage-funds" element={<ManageFunds />} />
+            <Route path="beneficiaries" element={<Beneficiaries />} />
+            <Route path="loans" element={<Loans />} />
+            <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

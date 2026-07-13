@@ -5,7 +5,6 @@ import { AuthContext } from '../context/AuthContext';
 const TransferFunds = () => {
   const { user } = useContext(AuthContext);
   const [accounts, setAccounts] = useState([]);
-  const [beneficiaries, setBeneficiaries] = useState([]);
   const [formData, setFormData] = useState({
     fromAccountId: '',
     toAccountId: '',
@@ -26,11 +25,6 @@ const TransferFunds = () => {
         if (res.data.accounts.length > 0) {
           setFormData(prev => ({ ...prev, fromAccountId: res.data.accounts[0].account_id.toString() }));
         }
-
-        const benRes = await axios.get(`${apiUrl}/beneficiaries`, {
-          headers: { Authorization: `Bearer ${user.token}` }
-        });
-        setBeneficiaries(benRes.data);
       } catch (err) {
         console.error('Failed to load accounts or beneficiaries');
       }
@@ -113,7 +107,7 @@ const TransferFunds = () => {
         </div>
         
         <div>
-          <label className="block text-sm text-gray-400 mb-2">To Account (Beneficiary)</label>
+          <label className="block text-sm text-gray-400 mb-2">To Account</label>
           <div className="flex gap-4">
             <select
               className="flex-1 bg-brand-dark border border-gray-600 rounded px-4 py-3 text-white appearance-none"
@@ -123,10 +117,10 @@ const TransferFunds = () => {
                 }
               }}
             >
-              <option value="">-- Select Beneficiary --</option>
-              {beneficiaries.map(ben => (
-                <option key={ben.beneficiary_id} value={ben.beneficiary_account_id}>
-                  {ben.nickname} (Acct #{ben.beneficiary_account_id})
+              <option value="">-- Select Your Account --</option>
+              {accounts.map(acc => (
+                <option key={acc.account_id} value={acc.account_id}>
+                  {acc.account_type} - Acct #{acc.account_id}
                 </option>
               ))}
             </select>

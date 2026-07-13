@@ -51,21 +51,21 @@ CREATE TABLE IF NOT EXISTS transactions (
     CONSTRAINT chk_different_accounts CHECK (from_account_id IS DISTINCT FROM to_account_id)
 );
 
--- 4. Beneficiaries Table
-CREATE TABLE IF NOT EXISTS beneficiaries (
-    beneficiary_id SERIAL PRIMARY KEY,
+-- 4. Joint Accounts Table
+CREATE TABLE IF NOT EXISTS joint_accounts (
+    joint_id SERIAL PRIMARY KEY,
+    account_id INT NOT NULL,
     customer_id INT NOT NULL,
-    beneficiary_account_id INT NOT NULL,
-    nickname VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_beneficiary_customer FOREIGN KEY (customer_id)
-        REFERENCES customers(customer_id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_beneficiary_account FOREIGN KEY (beneficiary_account_id)
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_joint_account FOREIGN KEY (account_id)
         REFERENCES accounts(account_id)
         ON DELETE CASCADE,
-    CONSTRAINT chk_different_customer CHECK (customer_id IS DISTINCT FROM beneficiary_account_id)
+    CONSTRAINT fk_joint_customer FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE CASCADE,
+    UNIQUE(account_id, customer_id)
 );
+
 
 -- 5. Loans Table
 CREATE TABLE IF NOT EXISTS loans (

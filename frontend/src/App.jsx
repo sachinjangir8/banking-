@@ -9,7 +9,7 @@ import Statements from './components/Statements';
 import Login from './components/Login';
 import Register from './components/Register';
 import ManageFunds from './components/ManageFunds';
-import Beneficiaries from './components/Beneficiaries';
+import JointAccounts from './components/JointAccounts';
 import Loans from './components/Loans';
 import AdminDashboard from './components/AdminDashboard';
 
@@ -48,7 +48,7 @@ function App() {
             <Route path="account/:id/statements" element={<Statements />} />
             <Route path="transfer" element={<TransferFunds />} />
             <Route path="manage-funds" element={<ManageFunds />} />
-            <Route path="beneficiaries" element={<Beneficiaries />} />
+            <Route path="joint-accounts" element={<JointAccounts />} />
             <Route path="loans" element={<Loans />} />
             <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />

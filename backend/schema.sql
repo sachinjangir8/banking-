@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS accounts (
     account_id SERIAL PRIMARY KEY,
     customer_id INT NOT NULL,
-    account_type VARCHAR(50) NOT NULL CHECK (account_type IN ('Checking', 'Savings', 'Credit')),
+    account_type VARCHAR(50) NOT NULL CHECK (account_type IN ('Current', 'Savings', 'Credit')),
     balance DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     currency VARCHAR(3) NOT NULL DEFAULT 'USD',
     status VARCHAR(20) NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Suspended', 'Closed')),

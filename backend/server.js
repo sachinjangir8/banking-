@@ -45,7 +45,7 @@ const requireAdmin = (req, res, next) => {
 // ------------------------------------------------------------------
 
 app.post('/api/auth/register', async (req, res) => {
-    const { firstName, lastName, email, phone, password } = req.body;
+    const { firstName, lastName, email, phone, password, accountType = 'Current' } = req.body;
     if (!firstName || !lastName || !email || !password) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -57,11 +57,12 @@ app.post('/api/auth/register', async (req, res) => {
             [firstName, lastName, email, phone, passwordHash]
         );
         
-        // Auto-create a default Checking account for the new user
+        // Auto-create the initial account for the new user
         const customerId = rows[0].customer_id;
+        const finalAccountType = ['Current', 'Savings'].includes(accountType) ? accountType : 'Current';
         await pool.query(
-            "INSERT INTO accounts (customer_id, account_type, balance, currency, status) VALUES ($1, 'Checking', 0.00, 'INR', 'Active')",
-            [customerId]
+            "INSERT INTO accounts (customer_id, account_type, balance, currency, status) VALUES ($1, $2, 0.00, 'INR', 'Active')",
+            [customerId, finalAccountType]
         );
 
         res.status(201).json({ message: 'User registered successfully', customerId });
@@ -530,13 +531,13 @@ app.put('/api/admin/loans/:id/approve', requireAuth, requireAdmin, async (req, r
         if (loanRows.length === 0) throw new Error('Loan not found or already processed');
         const loan = loanRows[0];
         
-        // Find user's checking account (or any active account) to deposit loan amount
+        // Find user's current account (or savings) to deposit loan amount
         const { rows: accRows } = await client.query(
-            "SELECT account_id FROM accounts WHERE customer_id = $1 AND account_type = 'Checking' AND status = 'Active' LIMIT 1 FOR UPDATE", 
+            "SELECT account_id FROM accounts WHERE customer_id = $1 AND account_type IN ('Current', 'Savings') AND status = 'Active' ORDER BY account_type ASC LIMIT 1 FOR UPDATE", 
             [loan.customer_id]
         );
         
-        if (accRows.length === 0) throw new Error('Customer does not have an active Checking account to receive funds');
+        if (accRows.length === 0) throw new Error('Customer does not have an active account to receive funds');
         const accountId = accRows[0].account_id;
         
         // Update loan status

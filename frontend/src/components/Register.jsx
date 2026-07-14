@@ -10,7 +10,8 @@ const Register = () => {
     lastName: '',
     email: '',
     phone: '',
-    password: ''
+    password: '',
+    accountType: 'Current'
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -84,6 +85,18 @@ const Register = () => {
             className="w-full bg-brand-dark border border-gray-600 rounded px-4 py-2 text-white"
             onChange={handleChange}
           />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Initial Account Type</label>
+          <select 
+            name="accountType" 
+            value={formData.accountType}
+            className="w-full bg-brand-dark border border-gray-600 rounded px-4 py-2 text-white appearance-none"
+            onChange={handleChange}
+          >
+            <option value="Current">Current Account</option>
+            <option value="Savings">Savings Account</option>
+          </select>
         </div>
         <button 
           type="submit" 

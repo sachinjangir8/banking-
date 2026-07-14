@@ -9,16 +9,16 @@ INSERT INTO customers (first_name, last_name, email, phone, password_hash, is_ad
 ('kamal', 'barbar', 'kamal@gmail.com', '555-0103', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa', FALSE);
 
 -- 2. Insert Mock Accounts
--- Customer 1 gets a checking and savings
+-- Customer 1 gets a current and savings
 INSERT INTO accounts (customer_id, account_type, balance, currency, status) VALUES
-(1, 'Checking', 1500.50, 'INR', 'Active'),
+(1, 'Current', 1500.50, 'INR', 'Active'),
 (1, 'Savings', 5000.00, 'INR', 'Active');
 
--- Customer 2 gets a checking
+-- Customer 2 gets a current
 INSERT INTO accounts (customer_id, account_type, balance, currency, status) VALUES
-(2, 'Checking', 300.00, 'INR', 'Active');
+(2, 'Current', 300.00, 'INR', 'Active');
 
--- Customer 3 gets a checking and savings
+-- Customer 3 gets a current and savings
 INSERT INTO accounts (customer_id, account_type, balance, currency, status) VALUES
-(3, 'Checking', 10000.00, 'INR', 'Active'),
+(3, 'Current', 10000.00, 'INR', 'Active'),
 (3, 'Savings', 25000.00, 'INR', 'Active');

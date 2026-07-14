@@ -35,12 +35,20 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      <div className="glass-panel p-8 flex justify-between items-center">
+      <div className="glass-panel p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">My Overview</h1>
-          <p className="text-gray-400">Manage your accounts and track your balance.</p>
+          <h1 className="text-3xl font-bold text-white mb-4">Profile Overview</h1>
+          <div className="text-gray-300 space-y-2 text-sm">
+            <p><span className="text-gray-500 inline-block w-32">Name:</span> {profile.first_name} {profile.last_name}</p>
+            <p><span className="text-gray-500 inline-block w-32">Email:</span> {profile.email}</p>
+            <p><span className="text-gray-500 inline-block w-32">Phone:</span> {profile.phone}</p>
+            <p><span className="text-gray-500 inline-block w-32">Customer ID:</span> #{profile.customer_id}</p>
+            {accounts.length > 0 && (
+              <p><span className="text-gray-500 inline-block w-32">Primary Account:</span> <span className="text-brand-accent font-bold">#{accounts[0].account_id}</span></p>
+            )}
+          </div>
         </div>
-        <div className="text-right">
+        <div className="text-left md:text-right w-full md:w-auto p-6 bg-black/20 rounded-lg border border-white/5">
           <p className="text-gray-400 text-sm uppercase tracking-wider mb-1">Total Net Worth</p>
           <p className="text-4xl font-black text-brand-accent">₹{totalBalance.toFixed(2)}</p>
         </div>
